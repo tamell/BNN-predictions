@@ -212,6 +212,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_units', help='number of hidden units per layer', default=50, type=int)
     parser.add_argument('--activation', help='activation function', default='tanh',
                         choices=['tanh', 'relu'])
+    parser.add_argument('--root_dir', help='Root directory', default='../data')
     parser.add_argument('--name', help='name result file', default='', type=str)
     parser.add_argument('--n_samples', help='number predictive samples', type=int, default=1000)
     args = parser.parse_args()
@@ -226,17 +227,19 @@ if __name__ == '__main__':
     activation = args.activation
     n_samples = args.n_samples
     name = args.name
+    root_dir = args.root_dir
 
     if double:
         torch.set_default_dtype(torch.double)
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    ds_train = UCIClassificationDatasets(dataset, random_seed=seed, stratify=True,
+    ds_train = UCIClassificationDatasets(dataset, random_seed=seed, root=root_dir, stratify=True,
+
                                          train=True, double=double)
-    ds_test = UCIClassificationDatasets(dataset, random_seed=seed, stratify=True,
+    ds_test = UCIClassificationDatasets(dataset, random_seed=seed, root=root_dir, stratify=True,
                                         train=False, valid=False, double=double)
-    ds_valid = UCIClassificationDatasets(dataset, random_seed=seed, stratify=True,
+    ds_valid = UCIClassificationDatasets(dataset, random_seed=seed, root=root_dir, stratify=True,
                                          train=False, valid=True, double=double)
 
     deltas = np.logspace(logd_min, logd_max, n_deltas)
