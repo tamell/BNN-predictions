@@ -1,4 +1,5 @@
 import pickle
+import os
 import numpy as np
 import torch
 import tqdm
@@ -176,7 +177,7 @@ def inference(ds_train, ds_test, ds_valid, prior_prec, lr, n_epochs, device, see
     return res
 
 
-def main(ds_train, ds_test, ds_valid, deltas, device, dataset, name, seed, **kwargs):
+def main(ds_train, ds_test, ds_valid, deltas, device, dataset, name, seed, res_dir, **kwargs):
     results = list()
     for i, delta in tqdm.tqdm(list(enumerate(deltas))):
         res = inference(ds_train, ds_test, ds_valid, prior_prec=delta, device=device,
@@ -190,7 +191,7 @@ def main(ds_train, ds_test, ds_valid, deltas, device, dataset, name, seed, **kwa
     resdict['N_test'] = len(ds_test)
     resdict['K'] = ds_train.C
 
-    with open(f'experiments/results/classification_{dataset}_{name}_{seed}.pkl', 'wb') as f:
+    with open(os.path.join(res_dir, f'classification_{dataset}_{name}_{seed}.pkl'), 'wb') as f:
         pickle.dump(resdict, f)
 
 
@@ -212,7 +213,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_units', help='number of hidden units per layer', default=50, type=int)
     parser.add_argument('--activation', help='activation function', default='tanh',
                         choices=['tanh', 'relu'])
-    parser.add_argument('--root_dir', help='Root directory', default='../data')
+    parser.add_argument('--root_dir', help='Root directory', default='../')
     parser.add_argument('--name', help='name result file', default='', type=str)
     parser.add_argument('--n_samples', help='number predictive samples', type=int, default=1000)
     args = parser.parse_args()
@@ -229,19 +230,21 @@ if __name__ == '__main__':
     name = args.name
     root_dir = args.root_dir
 
+    data_dir = os.path.join(root_dir, 'data')
+    res_dir = os.path.join(root_dir, 'experiments', 'results')
+
     if double:
         torch.set_default_dtype(torch.double)
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    ds_train = UCIClassificationDatasets(dataset, random_seed=seed, root=root_dir, stratify=True,
-
+    ds_train = UCIClassificationDatasets(dataset, random_seed=seed, root=data_dir, stratify=True,
                                          train=True, double=double)
-    ds_test = UCIClassificationDatasets(dataset, random_seed=seed, root=root_dir, stratify=True,
+    ds_test = UCIClassificationDatasets(dataset, random_seed=seed, root=data_dir, stratify=True,
                                         train=False, valid=False, double=double)
-    ds_valid = UCIClassificationDatasets(dataset, random_seed=seed, root=root_dir, stratify=True,
+    ds_valid = UCIClassificationDatasets(dataset, random_seed=seed, root=data_dir, stratify=True,
                                          train=False, valid=True, double=double)
 
     deltas = np.logspace(logd_min, logd_max, n_deltas)
-    main(ds_train, ds_test, ds_valid, deltas, device, dataset, name, seed, n_epochs=n_epochs,
+    main(ds_train, ds_test, ds_valid, deltas, device, dataset, name, seed, res_dir, n_epochs=n_epochs,
          lr=lr, n_layers=n_layers, n_units=n_units, activation=activation, n_samples=n_samples)
